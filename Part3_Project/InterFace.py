@@ -193,6 +193,7 @@ class VehicleEntry(tk.Frame):
                             width=20, height=3, pady=10,  bg='#d1d1e0')
         done.place(x=100, y=360)
         home.place(x=100,y=430)
+
 class VehicleReturnEntry(tk.Frame):
 
     def __init__(self, parent, controller):
@@ -235,9 +236,8 @@ class VehicleReturnEntry(tk.Frame):
                     MessageBox.showerror("STATUS", "No results found\nPlease input correct data")
                 else:
                     MessageBox.showinfo("INFO", "Total Amount Due is %s" % myresult[0])
-                    query = ("""UPDATE RENTAL 
+                    query = ("""UPDATE RENTAL, CUSTOMER
                                 SET PaymentDate = CASE WHEN RENTAL.PaymentDate IS NULL THEN RENTAL.ReturnDate ELSE RENTAL.PaymentDate END, Returned = 1
-                                FROM CUSTOMER
                                 WHERE ReturnDate = %s AND VehicleID = %s AND CUSTOMER.Name = %s AND RENTAL.CustID = CUSTOMER.CustID""")
                     values = (self.return_date_entry.get(), self.vehicle_entry.get(), self.name_entry.get(),)
                     mycursor.execute(query,values)
@@ -249,10 +249,6 @@ class VehicleReturnEntry(tk.Frame):
                     self.return_date_entry.delete(0, 'end')
                     mydb.close()
 
-
-
-
-
         done = tk.Button(self, font=('orbitron', 7, 'bold'), text="Done",
                          command=updateRental, relief='raised', borderwidth=5,
                          width=20, height=3, pady=10, bg='#d1d1e0')
@@ -262,8 +258,6 @@ class VehicleReturnEntry(tk.Frame):
                          width=20, height=3, pady=10, bg='#d1d1e0')
 
         home.place(x=100, y=360)
-
-
 
 
 if __name__ == "__main__":
