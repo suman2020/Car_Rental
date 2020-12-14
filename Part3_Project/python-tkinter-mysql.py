@@ -21,6 +21,7 @@ class HomePage():
         input_frame.pack()
         query_info = Frame(homeFrame, bd=10, width=295, height=695,padx=1, pady=1, relief=GROOVE)
         query_info.pack(side = LEFT,padx=0, pady=0)
+
         view_frame = Frame(window, bd=10, width=500, height=345, padx=2, relief=GROOVE)
         view_frame.pack(side=BOTTOM)
 
@@ -54,22 +55,45 @@ class HomePage():
 
         #---------------------------------------------------------------------------------------------------
         def customerEntry():
-            self.heading = Label(input_frame, text="Please fill out the following information", font=('bold', 15))
-            self.heading.place(x=1,y=1)
-            self.name = Label(input_frame, text='Name', font=('bold', 12))
-            self.name.place(x=5,y=50)
-            self.name_entry = Entry(input_frame, width=50)
-            self.name_entry.place(x=70, y=50)
+            if second_entry_running== True :
+                self.heading = Label(input_frame, text="Please fill out the following information", font=('bold', 15))
+                self.heading.place(x=1, y=1)
+                self.name = Label(input_frame, text='Name', font=('bold', 12))
+                self.name.place(x=5, y=50)
+                self.name_entry = Entry(input_frame, width=50)
+                self.name_entry.place(x=70, y=50)
 
-            self.phone = Label(input_frame, text='Phone', font=('bold', 12))
-            self.phone.place(x=5, y=90)
-            self.phone_entry = Entry(input_frame, width=50)
-            self.phone_entry.place(x=70, y=90)
+                self.phone = Label(input_frame, text='Phone', font=('bold', 12))
+                self.phone.place(x=5, y=90)
 
-            self.done_button = Button(input_frame, text="DONE", font=("bold", 10), bg='white', width=10, command=insertCustomerInfo)
-            self.done_button.place(x=5, y=130)
+                self.phone_entry = Entry(input_frame, width=50)
+                self.phone_entry.place(x=70, y=90)
+                self.done_button = Button(input_frame, text="DONE", font=("bold", 10), bg='white', width=10,
+                                          command=insertCustomerInfo)
+                self.done_button.place(x=5, y=130)
+
+                self.heading.place_forget()
+                self.name.place_forget()
+                self.name_entry.place_forget()
+                self.phone.place_forget()
+                self.phone_entry.place_forget()
+                self.done_button.place_forget()
+
+            if first_entry_running == True:
+                self.heading.place(x=1, y=1)
+                self.name.place(x=5, y=50)
+                self.name_entry.place(x=70, y=50)
+                self.phone.place(x=5, y=90)
+                self.phone_entry.place(x=70, y=90)
+                self.done_button.place(x=5, y=130)
+
+
+
+
+
 
         def vehicleEntry():
+            customerEntry()
             self.heading = Label(input_frame, text="Please fill out the following information", font=('bold', 15))
             self.heading.place(x=1, y=1)
 
@@ -119,8 +143,8 @@ class HomePage():
 
 if __name__ == '__main__':
     root = Tk()
-    homePage = HomePage(root);
-    root.mainloop();
+    homePage = HomePage(root)
+    root.mainloop()
 
 
 
