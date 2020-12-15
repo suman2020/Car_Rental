@@ -15,7 +15,7 @@ class RentalSystem(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
-        for F in (HomePage, CustomerEntry, VehicleEntry,VehicleReturnEntry,CustomerView,VehicleView):
+        for F in (HomePage, CustomerEntry, VehicleEntry,RentalEntry,VehicleReturnEntry,CustomerView,VehicleView):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame
@@ -54,6 +54,10 @@ class HomePage(tk.Frame):
         vehicle_entry_button = tk.Button(self,font= ('orbitron',10,'bold'), text="Vehicle Entry",
                             command=lambda: controller.show_frame("VehicleEntry"), relief = 'raised',
                             borderwidth = 5, width = 40, height =3)
+        rental_entry_button = tk.Button(self, font=('orbitron', 10, 'bold'), text="Rental Entry",
+                                                command=lambda: controller.show_frame("RentalEntry"),
+                                                relief='raised',
+                                                borderwidth=5, width=40, height=3)
         vehicle_return_entry_button = tk.Button(self, font=('orbitron', 10, 'bold'), text="Vehicle Return Entry",
                                          command=lambda: controller.show_frame("VehicleReturnEntry"), relief='raised',
                                          borderwidth=5, width=40, height=3)
@@ -67,6 +71,7 @@ class HomePage(tk.Frame):
                                          borderwidth=5, width=40, height=3)
         customer_entry_button.pack(pady=10)
         vehicle_entry_button.pack(pady=10)
+        rental_entry_button.pack(pady=10)
         vehicle_return_entry_button.pack(pady=10)
         customer_view_button.pack(pady=10)
         vehicle_view_button.pack(pady=10)
@@ -204,6 +209,18 @@ class VehicleEntry(tk.Frame):
         done.place(x=100, y=360)
         home.place(x=100,y=430)
 
+class RentalEntry(tk.Frame):
+
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent,bg = '#3d3d5c')
+        self.controller = controller
+
+        heading_label = tk.Label(self, text="Add a Rental Info", font=('orbitron', 25, 'bold'),
+                                 foreground='white', background='#3d3d5c')
+        heading_label.pack(fill="x", pady=20)
+
+
+
 class VehicleReturnEntry(tk.Frame):
 
     def __init__(self, parent, controller):
@@ -310,16 +327,16 @@ class CustomerView(tk.Frame):
 
                 if (str(self.orderBy_entry.get()) == 'CustomerID'):
                     mycursor.execute(
-                        "SELECT CustomerID, CustomerName,RentalBalance FROM vrentalinfo ORDER BY CustomerID ")
+                        "SELECT CustomerID, CustomerName,SUM(RentalBalance) FROM vrentalinfo GROUP BY CustomerID ORDER BY CustomerID ")
                 elif (str(self.orderBy_entry.get()) == 'CustomerName'):
                     mycursor.execute(
-                        "SELECT CustomerID, CustomerName,RentalBalance FROM vrentalinfo ORDER BY CustomerName ")
+                        "SELECT CustomerID, CustomerName,SUM(RentalBalance) FROM vrentalinfo GROUP BY CustomerID ORDER BY CustomerName ")
                 elif (str(self.orderBy_entry.get()) == "RentalBalance"):
                     mycursor.execute(
-                        "SELECT CustomerID, CustomerName,RentalBalance FROM vrentalinfo ORDER BY RentalBalance ")
+                        "SELECT CustomerID, CustomerName,SUM(RentalBalance) FROM vrentalinfo GROUP BY CustomerID ORDER BY RentalBalance ")
                 else:
                     mycursor.execute(
-                        "SELECT CustomerID, CustomerName,RentalBalance FROM vrentalinfo ORDER BY RentalBalance ")
+                        "SELECT CustomerID, CustomerName,SUM(RentalBalance) FROM vrentalinfo GROUP BY CustomerID ORDER BY RentalBalance ")
                 result = mycursor.fetchall()
                 row_count = mycursor.rowcount
                 list.insert(list.size() + 1, 'CustomerID       Name              RemainingBalance')
@@ -344,12 +361,19 @@ class CustomerView(tk.Frame):
 
                 if (str(self.orderBy_entry.get()) == "RentalBalance"):
                     sql = (
-                        "SELECT CustomerID, CustomerName,RentalBalance FROM vrentalinfo WHERE CustomerID = %s OR CustomerName = %s ORDER BY RentalBalance ")
+                        "SELECT CustomerID, CustomerName,SUM(RentalBalance) FROM vrentalinfo WHERE CustomerID = %s OR CustomerName LIKE %s GROUP BY CustomerID ORDER BY RentalBalance ")
+                elif (str(self.orderBy_entry.get()) == "CustomerID"):
+                    sql = (
+                        "SELECT CustomerID, CustomerName,SUM(RentalBalance) FROM vrentalinfo WHERE CustomerID = %s OR CustomerName LIKE %s GROUP BY CustomerID ORDER BY CustomerID ")
+                elif(str(self.orderBy_entry.get()) == "CustomerName"):
+                    sql = (
+                        "SELECT CustomerID, CustomerName,SUM(RentalBalance) FROM vrentalinfo WHERE CustomerID = %s OR CustomerName LIKE %s GROUP BY CustomerID ORDER BY CustomerName ")
+
                 else:
                     sql = (
-                        "SELECT CustomerID, CustomerName,RentalBalance FROM vrentalinfo WHERE CustomerID = %s OR CustomerName = %s ORDER BY RentalBalance")
+                        "SELECT CustomerID, CustomerName,SUM(RentalBalance) FROM vrentalinfo WHERE CustomerID = %s OR CustomerName LIKE %s GROUP BY CustomerID ORDER BY RentalBalance")
 
-                values = (self.search_entry.get(), self.search_entry.get(),)
+                values = (self.search_entry.get(), "%" + self.search_entry.get() + "%",)
                 mycursor.execute(sql, values)
                 result = mycursor.fetchall()
                 row_count = mycursor.rowcount
@@ -359,7 +383,9 @@ class CustomerView(tk.Frame):
                 else:
                     list.insert(list.size()+1, 'CustomerID       Name              RemainingBalance')
                     for row in result:
-                        datA = str(row[0]) + '               '+ row[1]+'         '+'$'+ str(float(row[2]))
+                        float_value = "%0.2f" % (row[2],)
+                        sign = '$' + str(float_value)
+                        datA = str(row[0]) + '               '+ row[1]+'         '+ sign
                         list.insert(list.size()+1, datA)
                 count_row = "Total rows returned :"+ str(row_count)
                 list.insert(list.size()+1, count_row)
@@ -458,11 +484,11 @@ class VehicleView(tk.Frame):
                 mydb = mysql.connect(host="localhost", user="root", password="Miracle177636$", database="car_rental")
                 mycursor = mydb.cursor()
                 if (str(self.orderBy_entry.get()) == 'AverageDailyPrice'):
-                    sql = ("SELECT VIN, Vehicle, AVG(OrderAmount / TotalDays) AS AverageDailyPrice FROM vrentalinfo WHERE VIN = %s OR Vehicle = %s  GROUP BY VIN ORDER BY AverageDailyPrice")
+                    sql = ("SELECT VIN, Vehicle, AVG(OrderAmount / TotalDays) AS AverageDailyPrice FROM vrentalinfo WHERE VIN = %s OR Vehicle LIKE %s  GROUP BY VIN ORDER BY AverageDailyPrice")
                 else:
                     sql = (
-                        "SELECT VIN, Vehicle, AVG(OrderAmount / TotalDays) AS AverageDailyPrice FROM vrentalinfo WHERE VIN = %s OR Vehicle = %s GROUP BY VIN ORDER BY AverageDailyPrice  ")
-                values = (self.search_entry.get(), self.search_entry.get(),)
+                        "SELECT VIN, Vehicle, AVG(OrderAmount / TotalDays) AS AverageDailyPrice FROM vrentalinfo WHERE VIN = %s OR Vehicle LIKE  %s GROUP BY VIN ORDER BY AverageDailyPrice  ")
+                values = (self.search_entry.get(), "%" + self.search_entry.get() + "%",)
                 mycursor.execute(sql, values)
                 result = mycursor.fetchall()
                 row_count = mycursor.rowcount
@@ -475,7 +501,7 @@ class VehicleView(tk.Frame):
                     for row in result:
                         float_value = "%0.2f" % (row[2],)
                         sign = '$' + str(float_value)
-                        datA = str(row[0]) + '           '+ row[1]+'              '+'$'+ sign
+                        datA = str(row[0]) + '           '+ row[1]+'              '+ sign
                         list.insert(list.size()+1, datA)
                 count_row = "Total rows returned :"+ str(row_count)
                 list.insert(list.size()+1, count_row)
