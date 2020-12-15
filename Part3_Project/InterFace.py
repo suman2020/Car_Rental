@@ -15,7 +15,7 @@ class RentalSystem(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
-        for F in (HomePage, CustomerEntry, VehicleEntry,VehicleReturnEntry):
+        for F in (HomePage, CustomerEntry, VehicleEntry,VehicleReturnEntry,CustomerView):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame
@@ -40,7 +40,7 @@ class HomePage(tk.Frame):
         tk.Frame.__init__(self, parent,bg = '#3d3d5c')
         self.controller = controller
         self.controller.title("Car Rental System")
-        self.controller.geometry("600x630")
+        self.controller.geometry("650x650")
         heading_label = tk.Label(self, text="Welcome to the Car Rental System", font=('orbitron', 25, 'bold'),
                                  foreground = 'white', background = '#3d3d5c' )
         heading_label.pack( fill="x", pady=20)
@@ -57,9 +57,14 @@ class HomePage(tk.Frame):
         vehicle_return_entry_button = tk.Button(self, font=('orbitron', 10, 'bold'), text="Vehicle Return Entry",
                                          command=lambda: controller.show_frame("VehicleReturnEntry"), relief='raised',
                                          borderwidth=5, width=40, height=3)
+        customer_view_button = tk.Button(self, font=('orbitron', 10, 'bold'), text="View Customer Info",
+                                                command=lambda: controller.show_frame("CustomerView"),
+                                                relief='raised',
+                                                borderwidth=5, width=40, height=3)
         customer_entry_button.pack(pady=10)
         vehicle_entry_button.pack(pady=10)
         vehicle_return_entry_button.pack(pady=10)
+        customer_view_button.pack(pady=10)
 
 class CustomerEntry(tk.Frame):
 
@@ -258,6 +263,112 @@ class VehicleReturnEntry(tk.Frame):
                          width=20, height=3, pady=10, bg='#d1d1e0')
 
         home.place(x=100, y=360)
+
+
+class CustomerView(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent, bg='#3d3d5c')
+        self.controller = controller
+        heading_label = tk.Label(self, text="Customer Info", font=('orbitron', 25, 'bold'),
+                                 foreground='white', background='#3d3d5c')
+        heading_label.pack(fill="x", pady=20)
+
+        self.search = tk.Label(self, text='Search', font=('bold', 15))
+        self.search.place(x=30, y=90)
+        self.search_entry = tk.Entry(self, width=25, font=('bold', 15))
+        self.search_entry.place(x=150, y=90)
+
+
+        self.orderBy = tk.Label(self, text='OrderBy', font=('bold', 15))
+        self.orderBy.place(x=30, y=140)
+        self.orderBy_entry = ttk.Combobox(self, width=23, font=('bold', 15), state='readonly')
+        self.orderBy_entry['values'] = ('SELECT ', 'CustomerID', 'CustomerName','RentalBalance')
+        self.orderBy_entry.current(0)
+        self.orderBy_entry.place(x=140, y=140)
+
+        list = tk.Listbox(self, font = ('orbitron', 15, 'bold' ), height =15)
+        list.place(x=50, y=290, width =500)
+
+        list.delete(0, list.size())
+        def resetValues():
+            list.delete(0, list.size())
+            self.orderBy_entry.current(0)
+
+        def outputInformation():
+            list.delete(0,list.size())
+
+
+            if self.search_entry.get() == "":
+
+                mydb = mysql.connect(host="localhost", user="root", password="Miracle177636$", database="car_rental")
+                mycursor = mydb.cursor()
+
+                if (str(self.orderBy_entry.get()) == 'CustomerID'):
+                    mycursor.execute(
+                        "SELECT CustomerID, CustomerName,RentalBalance FROM vrentalinfo ORDER BY CustomerID ")
+                elif (str(self.orderBy_entry.get()) == 'CustomerName'):
+                    mycursor.execute(
+                        "SELECT CustomerID, CustomerName,RentalBalance FROM vrentalinfo ORDER BY CustomerName ")
+                elif (str(self.orderBy_entry.get()) == "RentalBalance"):
+                    mycursor.execute(
+                        "SELECT CustomerID, CustomerName,RentalBalance FROM vrentalinfo ORDER BY RentalBalance ")
+                else:
+                    mycursor.execute(
+                        "SELECT CustomerID, CustomerName,RentalBalance FROM vrentalinfo ORDER BY RentalBalance ")
+                result = mycursor.fetchall()
+                row_count = mycursor.rowcount
+                list.insert(list.size() + 1, 'CustomerID       Name              RemainingBalance')
+
+                for row in result:
+
+                    float_value = "%0.2f"%(row[2],)
+                    sign = '$'+str(float_value)
+                    datA = f'{str(row[0]):<12}  {row[1]:<15} {sign:>20}'
+                    list.insert(list.size() + 1, datA)
+
+                count_row = "Total rows returned :" + str(row_count)
+                list.insert(list.size() + 1, count_row)
+                mydb.commit()
+                self.search_entry.delete(0, 'end')
+
+                mydb.close()
+
+            else:
+                mydb = mysql.connect(host="localhost", user="root", password="Miracle177636$", database="car_rental")
+                mycursor = mydb.cursor()
+                sql = ("SELECT CustomerID, CustomerName,RentalBalance FROM vrentalinfo WHERE CustomerID = %s OR CustomerName = %s ")
+                values = (self.search_entry.get(), self.search_entry.get(),)
+                mycursor.execute(sql, values)
+                result = mycursor.fetchall()
+                row_count = mycursor.rowcount
+                if row_count == 0:
+                    list.insert(list.size()+1,"Customer with the entered information not found.")
+                    list.insert(list.size()+1, "Please validate your information")
+                else:
+                    list.insert(list.size()+1, 'CustomerID       Name              RemainingBalance')
+                    for row in result:
+                        datA = str(row[0]) + '               '+ row[1]+'         '+'$'+ str(float(row[2]))
+                        list.insert(list.size()+1, datA)
+                count_row = "Total rows returned :"+ str(row_count)
+                list.insert(list.size()+1, count_row)
+                mydb.commit()
+                self.search_entry.delete(0, 'end')
+                mydb.close()
+
+        done = tk.Button(self, font=('orbitron', 5, 'bold'), text="Done",
+                         command=outputInformation, relief='raised', borderwidth=5,
+                         width=20, height=3, pady=10, bg='#d1d1e0')
+        done.place(x=50, y=190)
+        home = tk.Button(self, font=('orbitron', 5, 'bold'), text="Home",
+                         command=lambda: controller.show_frame("HomePage"), relief='raised', borderwidth=5,
+                         width=20, height=3, pady=10, bg='#d1d1e0')
+
+        home.place(x=150, y=190)
+        reset = tk.Button(self, font=('orbitron', 5, 'bold'), text="Reset",
+                         command= resetValues, relief='raised', borderwidth=5,
+                         width=20, height=3, pady=10, bg='#d1d1e0')
+
+        reset.place(x=250, y=190)
 
 
 if __name__ == "__main__":
